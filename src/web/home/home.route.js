@@ -7,6 +7,7 @@ const exibirAvisos = require('./controllers/exibirAvisos').exibirAvisos
 const criarAviso = require('./controllers/criarAviso').criarAviso;
 const editarAviso = require('./controllers/editarAviso').editarAviso;
 const excluirAviso = require('./controllers/excluirAviso').excluirAviso;
+const enviarEmail =  require('./controllers/enviarEmail').enviarEmail;
 
 // Definir as rotas
 router.post('/qnt', quantidades);
@@ -14,5 +15,6 @@ router.post('/exibir-avisos', exibirAvisos);
 router.post('/criar-aviso', criarAviso);    
 router.post('/editar-aviso', editarAviso);
 router.post('/excluir-aviso', excluirAviso);
+router.post('/enviar-email', enviarEmail)
  
 module.exports = router;
