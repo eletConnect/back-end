@@ -5,59 +5,65 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
-const os = require('os');
+const RedisStore = require('connect-redis')(session);
+const { createClient } = require('redis');
+const fs = require('fs');
 
 const app = express();
 
-const HOST = process.env.HOST || '0.0.0.0';
 const PORT = process.env.PORT || 3001;
 
-const obterEnderecoIPLocal = () => {
-  const interfaces = os.networkInterfaces();
-  for (const nomeInterface of Object.keys(interfaces)) {
-    for (const iface of interfaces[nomeInterface]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
-    }
-  }
-  return '127.0.0.1';
-};
+// Configuração do Redis com URL do Render ou local
+const redisClient = createClient({ url: process.env.REDIS_URL });
+redisClient.connect().catch(console.error);
 
-const IPLocal = obterEnderecoIPLocal();
-
+// Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
-  origin: [`http://localhost:5173`, `http://${IPLocal}:5173`, `http://localhost:5174`, `http://${IPLocal}:5174`],
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
 
+// Configurações de segurança e limites de taxa
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 10000 }));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 })); // Limite reduzido para produção
 
+// Configuração de sessão usando Redis como armazenamento
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'segredo-padrao',
+  store: new RedisStore({ client: redisClient }),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
+  cookie: { secure: true, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }, // `secure: true` para HTTPS em produção
 }));
 
+// Verifica se o diretório estático existe antes de servir
 const clientPath = path.join(__dirname, 'client', 'dist');
-if (require('fs').existsSync(clientPath)) {
+if (fs.existsSync(clientPath)) {
   app.use(express.static(clientPath));
   app.get('*', (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 } else {
-  console.warn("O diretório 'client/dist' não foi encontrado.");
+  console.warn("O diretório 'client/dist' não foi encontrado. Certifique-se de que o build do frontend está disponível.");
 }
 
+// Rota de status para verificar funcionamento
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
+
+// Rotas principais da API
 app.use(require('./src/routes'));
 
+// Middleware para tratar erros com menos detalhes em produção
 app.use((err, req, res, next) => {
-  res.status(err.status || 500).json({ error: { message: err.message, ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}) } });
+  res.status(err.status || 500).json({ 
+    error: { 
+      message: 'Erro interno do servidor', 
+      ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}) 
+    } 
+  });
 });
 
-app.listen(PORT, HOST, () => {
-  console.warn(`Servidor rodando em http://${IPLocal}:${PORT} (ou http://localhost:${PORT})`);
+// Inicia o servidor na porta definida
+app.listen(PORT, () => {
+  console.warn(`Servidor rodando na porta ${PORT}`);
 });
