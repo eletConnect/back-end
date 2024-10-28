@@ -9,15 +9,14 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração para confiar em todos os proxies
-app.set('trust proxy', true);  // Isso resolverá o problema com o 'X-Forwarded-For'
+// Configuração para confiar apenas no primeiro proxy
+app.set('trust proxy', 1);  // Confia apenas no primeiro proxy (o mais próximo)
 
-// Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Configuração do CORS para aceitar solicitações do frontend
+// Configuração do CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5174',
   credentials: true,
