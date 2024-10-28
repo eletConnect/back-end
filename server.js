@@ -4,20 +4,16 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
-const { Pool } = require('pg');
-const pgSession = require('connect-pg-simple')(session);
+const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração do Pool de Conexão com o Supabase
-// Configuração do Pool de Conexão com o Supabase
-const pgPool = new Pool({
-  connectionString: process.env.SUPABASE_DB_URL,
-  ssl: {
-    rejectUnauthorized: false, // Ignora a verificação de certificados para evitar problemas de SSL
-  }
-});
+// Configuração do cliente Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
@@ -31,19 +27,90 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
-// Configuração de sessão usando PostgreSQL (Supabase) como armazenamento
+// Funções para manipular sessões no Supabase
+async function saveSession(sessionId, sessionData, maxAge = 24 * 60 * 60 * 1000) {
+  const expiresAt = new Date(Date.now() + maxAge).toISOString();
+
+  const { error } = await supabase
+      .from('sessions')
+      .upsert({
+          id: sessionId,
+          session_data: sessionData,
+          expires_at: expiresAt
+      });
+
+  if (error) {
+      console.error('Erro ao salvar a sessão:', error);
+      throw error;
+  }
+}
+
+async function getSession(sessionId) {
+  const { data, error } = await supabase
+      .from('sessions')
+      .select('session_data')
+      .eq('id', sessionId)
+      .single();
+
+  if (error || !data) {
+      console.error('Erro ao buscar a sessão ou sessão não encontrada:', error);
+      return null;
+  }
+  return data.session_data;
+}
+
+async function deleteSession(sessionId) {
+  const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId);
+
+  if (error) {
+      console.error('Erro ao remover a sessão:', error);
+      throw error;
+  }
+}
+
+// Store personalizada para Supabase
+class SupabaseSessionStore extends session.Store {
+  async get(sid, callback) {
+      try {
+          const sessionData = await getSession(sid);
+          callback(null, sessionData);
+      } catch (error) {
+          callback(error);
+      }
+  }
+
+  async set(sid, sessionData, callback) {
+      try {
+          await saveSession(sid, sessionData);
+          callback(null);
+      } catch (error) {
+          callback(error);
+      }
+  }
+
+  async destroy(sid, callback) {
+      try {
+          await deleteSession(sid);
+          callback(null);
+      } catch (error) {
+          callback(error);
+      }
+  }
+}
+
+// Configuração do `express-session` usando a Store personalizada
 app.use(session({
-  store: new pgSession({
-    pool: pgPool,                // Usa o pool de conexão com o Supabase
-    tableName: 'session',        // Tabela onde as sessões serão armazenadas
-  }),
+  store: new SupabaseSessionStore(),
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production', // True em produção para HTTPS
     httpOnly: true, 
-    sameSite: 'None', // Necessário para cookies cross-origin
+    sameSite: 'None',
     maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
   }
 }));
@@ -53,15 +120,15 @@ app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor est
 
 // Exemplo de rota para evitar múltiplas respostas
 app.get('/exemplo', (req, res) => {
-    try {
-        if (someCondition) {
-            return res.json({ message: 'Resposta 1' }); // Use return para evitar múltiplas respostas
-        }
-        res.json({ message: 'Resposta 2' });
-    } catch (error) {
-        console.error('Erro na rota /exemplo:', error);
-        res.status(500).json({ error: 'Erro interno na rota' });
-    }
+  try {
+      if (someCondition) {
+          return res.json({ message: 'Resposta 1' }); // Use return para evitar múltiplas respostas
+      }
+      res.json({ message: 'Resposta 2' });
+  } catch (error) {
+      console.error('Erro na rota /exemplo:', error);
+      res.status(500).json({ error: 'Erro interno na rota' });
+  }
 });
 
 // Rotas principais da API
