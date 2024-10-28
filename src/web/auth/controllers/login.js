@@ -55,16 +55,19 @@ exports.login = async (request, response) => {
         }
 
         // Cria a sessão para o usuário
-        request.session.user = {
-            id: user.id,
-            matricula: user.matricula,
-            nome: user.nome,
-            email,
-            status: user.status,
-            cargo: user.cargo,
-            foto: user.foto,
-            instituicao: user.instituicao
-        };
+        // Cria a sessão para o usuário
+request.session.user = {
+    id: user.id,
+    matricula: user.matricula,
+    nome: user.nome,
+    email,
+    status: user.status,
+    cargo: user.cargo,
+    foto: user.foto,
+    instituicao: user.instituicao
+};
+console.log('Sessão criada:', request.session.user);
+
 
         return response.status(200).json({
             mensagem: 'Login efetuado com sucesso! Bem-vindo de volta.'
