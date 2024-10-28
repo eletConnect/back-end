@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Configuração para confiar apenas no primeiro proxy (o mais próximo)
-app.set('trust proxy', 1);  
+app.set('trust proxy', 1);  // Confia apenas no primeiro proxy, garantindo segurança
 
 // Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -23,16 +23,13 @@ app.use(cors({
   credentials: true,
 }));
 
-// Limite de taxa de requisições (Rate Limiting) com configuração dinâmica por IP
+// Limite de taxa de requisições (Rate Limiting) com configuração por IP
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000,  // Janela de 15 minutos
-    max: (req, res) => {
-        // Pode ajustar o limite conforme o tipo de usuário ou endpoint
-        return 1000; // Limite padrão de 1000 requisições por IP por janela de tempo
-    },
-    standardHeaders: true,     // Inclui informações de limite nos cabeçalhos padrão
-    legacyHeaders: false,      // Desativa cabeçalhos legados
-    trustProxy: true           // Usa o primeiro proxy confiável
+    max: 1000,                  // Limita a 1000 requisições por IP
+    standardHeaders: true,      // Inclui informações de limite nos cabeçalhos padrão
+    legacyHeaders: false,       // Desativa cabeçalhos legados
+    trustProxy: false           // Ignora a configuração `trust proxy` do Express para segurança extra
 }));
 
 // Configurações de segurança
