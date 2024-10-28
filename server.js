@@ -11,10 +11,14 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Configuração do Pool de Conexão com o Supabase
+// Configuração do Pool de Conexão com o Supabase
 const pgPool = new Pool({
   connectionString: process.env.SUPABASE_DB_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false, // Ignora a verificação de certificados para evitar problemas de SSL
+  }
 });
+
 
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
