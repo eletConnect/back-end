@@ -5,16 +5,18 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
-const { default: RedisStore } = require('connect-redis');
-const { createClient } = require('redis');
+const pgSession = require('connect-pg-simple')(session);
+const { Pool } = require('pg');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração do Redis com URL do Render ou local
-const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch(console.error);
+// Configuração do Pool de Conexão com o Supabase
+const pgPool = new Pool({
+  connectionString: process.env.SUPABASE_DB_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
@@ -28,9 +30,12 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
-// Configuração de sessão usando Redis como armazenamento
+// Configuração de sessão usando PostgreSQL (Supabase) como armazenamento
 app.use(session({
-  store: new RedisStore({ client: redisClient }),
+  store: new pgSession({
+    pool: pgPool,                // Usa o pool de conexão com o Supabase
+    tableName: 'session',        // Tabela onde as sessões serão armazenadas
+  }),
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
