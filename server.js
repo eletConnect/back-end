@@ -4,21 +4,15 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
-const { Pool } = require('pg');
-const pgSession = require('connect-pg-simple')(session);
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração do Pool de Conexão com o Supabase
-// Configuração do Pool de Conexão com o Supabase
-const pgPool = new Pool({
-  connectionString: process.env.SUPABASE_DB_URL,
-  ssl: {
-    rejectUnauthorized: false, // Ignora a verificação de certificados para evitar problemas de SSL
-  }
-});
-
+// Configuração do cliente Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
@@ -32,12 +26,8 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
-// Configuração de sessão usando PostgreSQL (Supabase) como armazenamento
+// Configuração de sessão usando o Supabase como armazenamento
 app.use(session({
-  store: new pgSession({
-    pool: pgPool,                // Usa o pool de conexão com o Supabase
-    tableName: 'session',        // Tabela onde as sessões serão armazenadas
-  }),
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -48,6 +38,8 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
   }
 }));
+
+// Configurações e funções da API usando o cliente Supabase
 
 // Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
@@ -65,7 +57,7 @@ app.get('/exemplo', (req, res) => {
     }
 });
 
-// Rotas principais da API
+// Rotas principais da API usando o cliente Supabase diretamente nas operações de dados
 app.use(require('./src/routes'));
 
 // Middleware para tratar erros com menos detalhes em produção
@@ -86,3 +78,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.warn(`Servidor rodando na porta ${PORT}`);
 });
+
+// Exporta o cliente Supabase para uso em outras partes do projeto
+module.exports = supabase;
