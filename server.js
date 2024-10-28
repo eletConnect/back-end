@@ -9,9 +9,10 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração para confiar apenas no primeiro proxy
-app.set('trust proxy', 1);  // Confia apenas no primeiro proxy (o mais próximo)
+// Configuração para confiar apenas no primeiro proxy (o mais próximo)
+app.set('trust proxy', 1);  
 
+// Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -22,11 +23,22 @@ app.use(cors({
   credentials: true,
 }));
 
-// Limites de taxa e configurações de segurança
+// Limite de taxa de requisições (Rate Limiting) com configuração dinâmica por IP
+app.use(rateLimit({
+    windowMs: 15 * 60 * 1000,  // Janela de 15 minutos
+    max: (req, res) => {
+        // Pode ajustar o limite conforme o tipo de usuário ou endpoint
+        return 1000; // Limite padrão de 1000 requisições por IP por janela de tempo
+    },
+    standardHeaders: true,     // Inclui informações de limite nos cabeçalhos padrão
+    legacyHeaders: false,      // Desativa cabeçalhos legados
+    trustProxy: true           // Usa o primeiro proxy confiável
+}));
+
+// Configurações de segurança
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
 // Funções para manipular sessões no Supabase
 async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
