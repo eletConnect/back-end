@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,23 +39,22 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 
 // Funções para manipular sessões no Supabase
-async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
+async function saveSession(sessionId, sessionData, maxAge = 24 * 60 * 60 * 1000) {
     const expiresAt = new Date(Date.now() + maxAge).toISOString();
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('sessions')
         .insert({
+            id: sessionId, // Usa o UUID fornecido como ID
             session_data: sessionData,
             expires_at: expiresAt
-        })
-        .select('id')
-        .single();
+        });
 
     if (error) {
         console.error('Erro ao salvar a sessão:', error);
         throw error;
     }
-    return data.id;
+    return sessionId;
 }
 
 async function getSession(sessionId) {
@@ -96,7 +96,8 @@ class SupabaseSessionStore extends session.Store {
 
     async set(sid, sessionData, callback) {
         try {
-            const sessionId = await saveSession(sessionData);
+            const sessionId = uuidv4();
+            await saveSession(sessionId, sessionData);
             callback(null, sessionId);
         } catch (error) {
             callback(error);
