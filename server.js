@@ -21,7 +21,7 @@ const pgPool = new Pool({
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5174',
-  credentials: true,
+  credentials: true, // Necessário para permitir cookies e autenticação cross-origin
 }));
 
 // Limites de taxa e configurações de segurança
@@ -39,7 +39,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: true, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // True em produção para HTTPS
+    httpOnly: true, 
+    sameSite: 'None', // Necessário para cookies cross-origin
+    maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
+  }
 }));
 
 // Rota de status
