@@ -20,7 +20,7 @@ const pgPool = new Pool({
 
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
   credentials: true,
 }));
 
