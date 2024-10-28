@@ -1,17 +1,18 @@
-const bcrypt = require('bcrypt');
 const supabase = require('../../../configs/supabase');
+const bcrypt = require('bcrypt');
 
 exports.login = async (request, response) => {
     const { email, senha } = request.body;
 
     try {
-        const { data: user, error: userERROR } = await supabase
+        // Consulta o usuário pelo email
+        const { data: user, error } = await supabase
             .from('usuarios')
             .select('*')
             .eq('email', email)
             .single();
 
-        if (userERROR) {
+        if (error) {
             return response.status(500).json({
                 mensagem: 'Houve um problema ao tentar fazer login. Por favor, tente novamente mais tarde.'
             });
@@ -29,6 +30,7 @@ exports.login = async (request, response) => {
             });
         }
 
+        // Verifica a senha
         const senhaValida = await bcrypt.compare(senha, user.senha);
         if (!senhaValida) {
             return response.status(401).json({
@@ -55,19 +57,16 @@ exports.login = async (request, response) => {
         }
 
         // Cria a sessão para o usuário
-        // Cria a sessão para o usuário
-request.session.user = {
-    id: user.id,
-    matricula: user.matricula,
-    nome: user.nome,
-    email,
-    status: user.status,
-    cargo: user.cargo,
-    foto: user.foto,
-    instituicao: user.instituicao
-};
-console.log('Sessão criada:', request.session.user);
-
+        request.session.user = {
+            id: user.id,
+            matricula: user.matricula,
+            nome: user.nome,
+            email,
+            status: user.status,
+            cargo: user.cargo,
+            foto: user.foto,
+            instituicao: user.instituicao
+        };
 
         return response.status(200).json({
             mensagem: 'Login efetuado com sucesso! Bem-vindo de volta.'
