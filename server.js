@@ -42,15 +42,6 @@ app.use(session({
   cookie: { secure: true, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
 }));
 
-// Servir arquivos estáticos do frontend
-const clientPath = path.join(__dirname, 'client', 'dist');
-if (fs.existsSync(clientPath)) {
-  app.use(express.static(clientPath));
-  app.get('*', (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
-} else {
-  console.warn("O diretório 'client/dist' não foi encontrado.");
-}
-
 // Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
 
