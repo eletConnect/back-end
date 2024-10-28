@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 
 // Importar os controladores
-const login = require('./controllers/login').login;
-const register = require('./controllers/register').register;
-const confirmRegistration = require('./controllers/confirmRegistration').confirmRegistration;
-const forgotPassword = require('./controllers/forgotPassword').forgotPassword;
-const resetPassword = require('./controllers/resetPassword').resetPassword;
-const changePassword = require('./controllers/changePassword').changePassword;
-const logout = require('./controllers/logout').logout;
-const updateProfile = require('./controllers/updateProfile').updateProfile;
-const checkSession = require('./controllers/checkSession').checkSession;
+const { login } = require('./controllers/login');
+const { register } = require('./controllers/register');
+const { confirmRegistration } = require('./controllers/confirmRegistration');
+const { forgotPassword } = require('./controllers/forgotPassword');
+const { resetPassword } = require('./controllers/resetPassword');
+const { changePassword } = require('./controllers/changePassword');
+const { logout } = require('./controllers/logout');
+const { updateProfile } = require('./controllers/updateProfile');
+const { checkSession } = require('./controllers/checkSession');
 
 // Definir as rotas
 router.post('/login', login);
