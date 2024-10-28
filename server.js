@@ -5,12 +5,13 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid'); // Importa a função para gerar UUIDs
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Configuração para confiar apenas no primeiro proxy (o mais próximo)
-app.set('trust proxy', 1);  // Garante que o Express confie apenas no primeiro proxy
+app.set('trust proxy', 1);
 
 // Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -19,17 +20,17 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Configuração do CORS para aceitar solicitações do frontend local e remoto
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5174', // Permite o acesso do frontend local
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
   credentials: true,
 }));
 
 // Limite de taxa de requisições (Rate Limiting) com configuração por IP
 app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,  // Janela de 15 minutos
-    max: 1000,                  // Limita a 1000 requisições por IP
-    standardHeaders: true,      // Inclui informações de limite nos cabeçalhos padrão
-    legacyHeaders: false,       // Desativa cabeçalhos legados
-    trustProxy: false           // Ignora a configuração `trust proxy` do Express para segurança extra
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: false
 }));
 
 // Configurações de segurança
@@ -37,13 +38,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 
-// Funções para manipular sessões no Supabase
+// Funções para manipular sessões no Supabase com UUIDs
 async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
+    const sessionId = uuidv4(); // Gera um UUID para o ID da sessão
     const expiresAt = new Date(Date.now() + maxAge).toISOString();
 
     const { error } = await supabase
         .from('sessions')
         .insert({
+            id: sessionId,               // Armazena o UUID como ID
             session_data: sessionData,
             expires_at: expiresAt
         });
@@ -52,13 +55,14 @@ async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
         console.error('Erro ao salvar a sessão:', error);
         throw error;
     }
+    return sessionId; // Retorna o UUID para ser usado como ID da sessão
 }
 
 async function getSession(sessionId) {
     const { data, error } = await supabase
         .from('sessions')
         .select('session_data')
-        .eq('id', sessionId)
+        .eq('id', sessionId) // Usa o UUID como ID da sessão
         .single();
 
     if (error || !data) {
@@ -93,8 +97,8 @@ class SupabaseSessionStore extends session.Store {
 
     async set(sid, sessionData, callback) {
         try {
-            await saveSession(sessionData);
-            callback(null);
+            const sessionId = await saveSession(sessionData);
+            callback(null, sessionId);
         } catch (error) {
             callback(error);
         }
@@ -116,11 +120,12 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    genid: () => uuidv4(), // Gera UUIDs para cada nova sessão
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',  // Cookies seguros apenas em produção
-        httpOnly: true, 
-        sameSite: 'None',  // Necessário para cookies cross-origin
-        maxAge: 24 * 60 * 60 * 1000  // Expira em 1 dia
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'None',
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -135,7 +140,7 @@ app.use((err, req, res, next) => {
     if (res.headersSent) {
         return next(err);
     }
-    
+
     res.status(err.status || 500).json({ 
         error: { 
             message: 'Erro interno do servidor', 
