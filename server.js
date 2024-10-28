@@ -118,19 +118,6 @@ app.use(session({
 // Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
 
-// Exemplo de rota para evitar múltiplas respostas
-app.get('/exemplo', (req, res) => {
-  try {
-      if (someCondition) {
-          return res.json({ message: 'Resposta 1' }); // Use return para evitar múltiplas respostas
-      }
-      res.json({ message: 'Resposta 2' });
-  } catch (error) {
-      console.error('Erro na rota /exemplo:', error);
-      res.status(500).json({ error: 'Erro interno na rota' });
-  }
-});
-
 // Rotas principais da API
 app.use(require('./src/routes'));
 
