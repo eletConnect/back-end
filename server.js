@@ -44,7 +44,7 @@ async function saveSession(sessionId, sessionData, maxAge = 24 * 60 * 60 * 1000)
 
     const { error } = await supabase
         .from('sessions')
-        .insert({
+        .upsert({
             id: sessionId, // Usa o UUID fornecido como ID
             session_data: sessionData,
             expires_at: expiresAt
@@ -64,11 +64,15 @@ async function getSession(sessionId) {
         .eq('id', sessionId)
         .single();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar a sessão:', error);
         return null;
     }
-    return data ? data.session_data : null;
+    if (!data) {
+        console.warn('Sessão não encontrada:', sessionId);
+        return null;
+    }
+    return data.session_data;
 }
 
 async function deleteSession(sessionId) {
@@ -96,9 +100,8 @@ class SupabaseSessionStore extends session.Store {
 
     async set(sid, sessionData, callback) {
         try {
-            const sessionId = uuidv4();
-            await saveSession(sessionId, sessionData);
-            callback(null, sessionId);
+            await saveSession(sid, sessionData);
+            callback(null);
         } catch (error) {
             callback(error);
         }
