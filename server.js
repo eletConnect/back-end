@@ -10,16 +10,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Configuração para confiar apenas no primeiro proxy (o mais próximo)
-app.set('trust proxy', 1);  // Confia apenas no primeiro proxy, garantindo segurança
+app.set('trust proxy', 1);  // Garante que o Express confie apenas no primeiro proxy
 
 // Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Configuração do CORS
+// Configuração do CORS para aceitar solicitações do frontend local e remoto
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174', // Permite o acesso do frontend local
   credentials: true,
 }));
 
@@ -117,10 +117,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production',  // Cookies seguros apenas em produção
         httpOnly: true, 
-        sameSite: 'None',
-        maxAge: 24 * 60 * 60 * 1000
+        sameSite: 'None',  // Necessário para cookies cross-origin
+        maxAge: 24 * 60 * 60 * 1000  // Expira em 1 dia
     }
 }));
 
