@@ -9,8 +9,8 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração para reconhecer cabeçalhos de proxy (como X-Forwarded-For)
-app.set('trust proxy', 1);  // '1' indica que o servidor está atrás de um proxy
+// Configuração para confiar em todos os proxies
+app.set('trust proxy', true);  // Isso resolverá o problema com o 'X-Forwarded-For'
 
 // Configuração do cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -20,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5174',
-  credentials: true, // Permite o envio de cookies e credenciais
+  credentials: true,
 }));
 
 // Limites de taxa e configurações de segurança
@@ -109,10 +109,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // True em produção para HTTPS
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true, 
         sameSite: 'None',
-        maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -125,7 +125,7 @@ app.use(require('./src/routes'));
 // Middleware para tratar erros com menos detalhes em produção
 app.use((err, req, res, next) => {
     if (res.headersSent) {
-        return next(err); // Encaminha para o próximo manipulador de erros se já tiver enviado a resposta
+        return next(err);
     }
     
     res.status(err.status || 500).json({ 
