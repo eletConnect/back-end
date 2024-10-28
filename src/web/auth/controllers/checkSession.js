@@ -1,6 +1,5 @@
 exports.checkSession = async (request, response) => {
     try {
-        console.log('Conteúdo da sessão atual:', request.session); // Log para verificar a sessão
         if (request.session?.user) {
             const { id, matricula, nome, email, foto, cargo, status, instituicao } = request.session.user;
 
