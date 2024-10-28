@@ -4,10 +4,8 @@ const session = require('express-session');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
-const path = require('path');
-const pgSession = require('connect-pg-simple')(session);
 const { Pool } = require('pg');
-const fs = require('fs');
+const pgSession = require('connect-pg-simple')(session);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,7 +19,7 @@ const pgPool = new Pool({
 // Configuração do CORS para aceitar solicitações do frontend
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5174',
-  credentials: true, // Necessário para permitir cookies e autenticação cross-origin
+  credentials: true, // Permite o envio de cookies e credenciais
 }));
 
 // Limites de taxa e configurações de segurança
@@ -50,11 +48,28 @@ app.use(session({
 // Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
 
+// Exemplo de rota para evitar múltiplas respostas
+app.get('/exemplo', (req, res) => {
+    try {
+        if (someCondition) {
+            return res.json({ message: 'Resposta 1' }); // Use return para evitar múltiplas respostas
+        }
+        res.json({ message: 'Resposta 2' });
+    } catch (error) {
+        console.error('Erro na rota /exemplo:', error);
+        res.status(500).json({ error: 'Erro interno na rota' });
+    }
+});
+
 // Rotas principais da API
 app.use(require('./src/routes'));
 
 // Middleware para tratar erros com menos detalhes em produção
 app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err); // Encaminha para o próximo manipulador de erros se já tiver enviado a resposta
+  }
+  
   res.status(err.status || 500).json({ 
     error: { 
       message: 'Erro interno do servidor', 
