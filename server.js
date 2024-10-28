@@ -5,7 +5,6 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,114 +27,126 @@ app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
 // Funções para manipular sessões no Supabase
-async function saveSession(sessionId, sessionData, maxAge = 24 * 60 * 60 * 1000) {
-  const expiresAt = new Date(Date.now() + maxAge).toISOString();
+async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
+    const expiresAt = new Date(Date.now() + maxAge).toISOString();
 
-  const { error } = await supabase
-      .from('sessions')
-      .upsert({
-          id: sessionId,
-          session_data: sessionData,
-          expires_at: expiresAt
-      });
+    const { error } = await supabase
+        .from('sessions')
+        .insert({
+            session_data: sessionData,
+            expires_at: expiresAt
+        });
 
-  if (error) {
-      console.error('Erro ao salvar a sessão:', error);
-      throw error;
-  }
+    if (error) {
+        console.error('Erro ao salvar a sessão:', error);
+        throw error;
+    }
 }
 
 async function getSession(sessionId) {
-  const { data, error } = await supabase
-      .from('sessions')
-      .select('session_data')
-      .eq('id', sessionId)
-      .single();
+    const { data, error } = await supabase
+        .from('sessions')
+        .select('session_data')
+        .eq('id', sessionId)
+        .single();
 
-  if (error || !data) {
-      console.error('Erro ao buscar a sessão ou sessão não encontrada:', error);
-      return null;
-  }
-  return data.session_data;
+    if (error || !data) {
+        console.error('Erro ao buscar a sessão ou sessão não encontrada:', error);
+        return null;
+    }
+    return data.session_data;
 }
 
 async function deleteSession(sessionId) {
-  const { error } = await supabase
-      .from('sessions')
-      .delete()
-      .eq('id', sessionId);
+    const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionId);
 
-  if (error) {
-      console.error('Erro ao remover a sessão:', error);
-      throw error;
-  }
+    if (error) {
+        console.error('Erro ao remover a sessão:', error);
+        throw error;
+    }
 }
 
 // Store personalizada para Supabase
 class SupabaseSessionStore extends session.Store {
-  async get(sid, callback) {
-      try {
-          const sessionData = await getSession(sid);
-          callback(null, sessionData);
-      } catch (error) {
-          callback(error);
-      }
-  }
+    async get(sid, callback) {
+        try {
+            const sessionData = await getSession(sid);
+            callback(null, sessionData);
+        } catch (error) {
+            callback(error);
+        }
+    }
 
-  async set(sid, sessionData, callback) {
-      try {
-          await saveSession(sid, sessionData);
-          callback(null);
-      } catch (error) {
-          callback(error);
-      }
-  }
+    async set(sid, sessionData, callback) {
+        try {
+            await saveSession(sessionData);
+            callback(null);
+        } catch (error) {
+            callback(error);
+        }
+    }
 
-  async destroy(sid, callback) {
-      try {
-          await deleteSession(sid);
-          callback(null);
-      } catch (error) {
-          callback(error);
-      }
-  }
+    async destroy(sid, callback) {
+        try {
+            await deleteSession(sid);
+            callback(null);
+        } catch (error) {
+            callback(error);
+        }
+    }
 }
 
 // Configuração do `express-session` usando a Store personalizada
 app.use(session({
-  store: new SupabaseSessionStore(),
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', // True em produção para HTTPS
-    httpOnly: true, 
-    sameSite: 'None',
-    maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
-  }
+    store: new SupabaseSessionStore(),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // True em produção para HTTPS
+        httpOnly: true, 
+        sameSite: 'None',
+        maxAge: 24 * 60 * 60 * 1000 // Expira em 1 dia
+    }
 }));
 
 // Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
+
+// Exemplo de rota para evitar múltiplas respostas
+app.get('/exemplo', (req, res) => {
+    try {
+        if (someCondition) {
+            return res.json({ message: 'Resposta 1' }); // Use return para evitar múltiplas respostas
+        }
+        res.json({ message: 'Resposta 2' });
+    } catch (error) {
+        console.error('Erro na rota /exemplo:', error);
+        res.status(500).json({ error: 'Erro interno na rota' });
+    }
+});
 
 // Rotas principais da API
 app.use(require('./src/routes'));
 
 // Middleware para tratar erros com menos detalhes em produção
 app.use((err, req, res, next) => {
-  if (res.headersSent) {
-    return next(err); // Encaminha para o próximo manipulador de erros se já tiver enviado a resposta
-  }
-  
-  res.status(err.status || 500).json({ 
-    error: { 
-      message: 'Erro interno do servidor', 
-      ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}) 
-    } 
-  });
+    if (res.headersSent) {
+        return next(err); // Encaminha para o próximo manipulador de erros se já tiver enviado a resposta
+    }
+    
+    res.status(err.status || 500).json({ 
+        error: { 
+            message: 'Erro interno do servidor', 
+            ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}) 
+        } 
+    });
 });
 
 // Inicia o servidor na porta definida
 app.listen(PORT, () => {
-  console.warn(`Servidor rodando na porta ${PORT}`);
+    console.warn(`Servidor rodando na porta ${PORT}`);
 });
