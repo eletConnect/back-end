@@ -5,7 +5,6 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const { v4: uuidv4 } = require('uuid'); // Importa a função para gerar UUIDs
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,38 +37,38 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
 
-// Funções para manipular sessões no Supabase com UUIDs
+// Funções para manipular sessões no Supabase
 async function saveSession(sessionData, maxAge = 24 * 60 * 60 * 1000) {
-    const sessionId = uuidv4(); // Gera um UUID para o ID da sessão
     const expiresAt = new Date(Date.now() + maxAge).toISOString();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('sessions')
         .insert({
-            id: sessionId,               // Armazena o UUID como ID
             session_data: sessionData,
             expires_at: expiresAt
-        });
+        })
+        .select('id')
+        .single();
 
     if (error) {
         console.error('Erro ao salvar a sessão:', error);
         throw error;
     }
-    return sessionId; // Retorna o UUID para ser usado como ID da sessão
+    return data.id;
 }
 
 async function getSession(sessionId) {
     const { data, error } = await supabase
         .from('sessions')
         .select('session_data')
-        .eq('id', sessionId) // Usa o UUID como ID da sessão
+        .eq('id', sessionId)
         .single();
 
-    if (error || !data) {
-        console.error('Erro ao buscar a sessão ou sessão não encontrada:', error);
+    if (error) {
+        console.error('Erro ao buscar a sessão:', error);
         return null;
     }
-    return data.session_data;
+    return data ? data.session_data : null;
 }
 
 async function deleteSession(sessionId) {
@@ -120,11 +119,10 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    genid: () => uuidv4(), // Gera UUIDs para cada nova sessão
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        sameSite: 'None',
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
