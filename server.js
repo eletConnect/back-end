@@ -5,12 +5,11 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
-const RedisStore = require('connect-redis')(session);
+const { default: RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
 const fs = require('fs');
 
 const app = express();
-
 const PORT = process.env.PORT || 3001;
 
 // Configuração do Redis com URL do Render ou local
@@ -23,11 +22,11 @@ app.use(cors({
   credentials: true,
 }));
 
-// Configurações de segurança e limites de taxa
+// Limites de taxa e configurações de segurança
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(helmet());
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 })); // Limite reduzido para produção
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
 
 // Configuração de sessão usando Redis como armazenamento
 app.use(session({
@@ -35,19 +34,19 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: true, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }, // `secure: true` para HTTPS em produção
+  cookie: { secure: true, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
 }));
 
-// Verifica se o diretório estático existe antes de servir
+// Servir arquivos estáticos do frontend
 const clientPath = path.join(__dirname, 'client', 'dist');
 if (fs.existsSync(clientPath)) {
   app.use(express.static(clientPath));
   app.get('*', (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 } else {
-  console.warn("O diretório 'client/dist' não foi encontrado. Certifique-se de que o build do frontend está disponível.");
+  console.warn("O diretório 'client/dist' não foi encontrado.");
 }
 
-// Rota de status para verificar funcionamento
+// Rota de status
 app.get('/status', (req, res) => res.json({ status: 'OK', message: 'Servidor está funcionando corretamente' }));
 
 // Rotas principais da API
