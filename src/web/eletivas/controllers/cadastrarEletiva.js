@@ -1,3 +1,4 @@
+const supabase = require('../../../configs/supabase');
 
 exports.cadastrarEletiva = async (request, response) => {
     const cadastrarEletiva = async (e) => {
