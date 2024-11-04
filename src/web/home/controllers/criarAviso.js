@@ -3,25 +3,31 @@ const supabase = require('../../../configs/supabase');
 exports.criarAviso = async (req, res) => {
   const { avisoParaSalvar, instituicao } = req.body;
 
-  console.log('avisoParaSalvar', avisoParaSalvar);
-
   try {
-    // Verifica se 'series' tem valores e une esses valores em uma string. Caso contrário, usa 'serie'
-    const serieParaSalvar = avisoParaSalvar.series && avisoParaSalvar.series.length > 0 
-      ? avisoParaSalvar.series.join(', ')  // Concatena múltiplas séries em uma string separada por vírgulas
-      : avisoParaSalvar.serie || null;
+    // Validação básica dos campos obrigatórios
+    if (!avisoParaSalvar.titulo || !avisoParaSalvar.conteudo || !avisoParaSalvar.author || !instituicao) {
+      return res.status(400).json({ mensagem: 'Título, conteúdo, autor e instituição são campos obrigatórios.' });
+    }
 
     // Preparando os dados para inserção
     const novoAviso = {
       titulo: avisoParaSalvar.titulo,
       conteudo: avisoParaSalvar.conteudo,
       author: avisoParaSalvar.author,
-      exclusivo: avisoParaSalvar.exclusivo,
+      exclusivo: avisoParaSalvar.exclusivo !== undefined ? avisoParaSalvar.exclusivo : false, // Valor padrão false
       instituicao: instituicao,
-      series: serieParaSalvar,  // Usar a série como uma string, concatenada se for múltiplas séries
-      turma: avisoParaSalvar.turma || null,  // Definir turma se for passado
-      cor: avisoParaSalvar.cor || 'primary',  // Adicionando a cor com um valor padrão 'primary'
+      cor: avisoParaSalvar.cor || 'primary', // Adicionando a cor com um valor padrão 'primary'
     };
+
+    // Se 'exclusivo' for true, adicionar 'serie', 'series' e 'turma'
+    if (avisoParaSalvar.exclusivo) {
+      const serieParaSalvar = avisoParaSalvar.series && avisoParaSalvar.series.length > 0
+        ? avisoParaSalvar.series.join(', ')  // Concatena múltiplas séries em uma string separada por vírgulas
+        : avisoParaSalvar.serie || null;
+
+      novoAviso.series = serieParaSalvar;
+      novoAviso.turma = avisoParaSalvar.turma || null;
+    }
 
     // Inserindo no banco de dados
     const { data, error } = await supabase
@@ -30,11 +36,13 @@ exports.criarAviso = async (req, res) => {
       .select();
 
     if (error) {
-      return res.status(500).json({ mensagem: error.message });
+      console.error('Erro ao inserir aviso no banco de dados:', error);
+      return res.status(500).json({ mensagem: 'Erro ao salvar aviso no banco de dados. Por favor, tente novamente.' });
     }
 
     return res.status(200).json(data[0]);
   } catch (error) {
-    return res.status(500).json({ mensagem: 'Erro ao salvar aviso.' });
+    console.error('Erro inesperado ao salvar aviso:', error);
+    return res.status(500).json({ mensagem: 'Ocorreu um erro inesperado ao salvar o aviso. Por favor, tente novamente mais tarde.' });
   }
 };
