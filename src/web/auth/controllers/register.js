@@ -32,7 +32,8 @@ exports.register = async (request, response) => {
         console.log('E-mail disponível, criando senha criptografada.');
 
         const hashedPassword = await bcrypt.hash(senha, 10);
-        const token = createToken({ email });
+        const token = createToken();
+        const matricula = createToken(); // Gerando a matrícula como um token exclusivo
 
         // URL de confirmação com o token
         const confirmationLink = `http://localhost:5173/confirm-registration?tkn=${token}`;
@@ -66,7 +67,7 @@ exports.register = async (request, response) => {
                     senha: hashedPassword,
                     status: 'Aguardando',
                     token,
-                    matricula: "", 
+                    matricula, // Usando o token gerado como matrícula
                     confirmed_at: null,
                     fazerLogin: true,
                     cargo: "First",
