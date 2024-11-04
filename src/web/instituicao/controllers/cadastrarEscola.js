@@ -23,7 +23,7 @@ async function createCode() {
 exports.cadastrarEscola = async (request, response) => {
     const { userID, cnpj, nome, cep, endereco, telefone, logotipo } = request.body;
 
-    if (!userID || !cnpj || !nome || !cep || !endereco || !telefone || !logotipo) {
+    if (!userID || !cnpj || !nome || !cep || !endereco || !telefone) {
         return response.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
     }
 
