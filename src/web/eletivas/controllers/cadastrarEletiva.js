@@ -11,9 +11,11 @@ exports.cadastrarEletiva = async (request, response) => {
         professor,
         sala,
         totalAlunos,
-        exclusiva,
-        serie,
-        turma,
+        isExclusiva, // Campo que define se a eletiva é exclusiva
+        series, // Array de séries (para exclusividade por série)
+        serie, // Série (para exclusividade por turma)
+        turma, // Turma (para exclusividade por turma)
+        status
     } = request.body;
 
     // Log dos dados recebidos
@@ -21,8 +23,15 @@ exports.cadastrarEletiva = async (request, response) => {
 
     try {
         // Validações iniciais de campos obrigatórios
-        if (!instituicao || !nome || !tipo || !dia || !horario || !professor || !sala || !totalAlunos) {
+        if (!instituicao || !nome || !tipo || !dia || !horario || !professor || !sala || !totalAlunos || !status) {
             return response.status(400).json({ mensagem: 'Todos os campos obrigatórios devem ser preenchidos.' });
+        }
+
+        // Validações adicionais para exclusividade
+        if (isExclusiva) {
+            if ((!series || series.length === 0) && (!serie || !turma)) {
+                return response.status(400).json({ mensagem: 'Os dados de exclusividade devem ser fornecidos (séries ou série e turma).' });
+            }
         }
 
         // Geração de um código único
@@ -42,9 +51,11 @@ exports.cadastrarEletiva = async (request, response) => {
                     professor,
                     sala,
                     total_alunos: totalAlunos,
-                    exclusiva,
-                    serie: exclusiva ? serie : null,
-                    turma: exclusiva ? turma : null,
+                    status,
+                    exclusiva: isExclusiva,
+                    series: isExclusiva && series ? series : null,
+                    serie: isExclusiva && serie ? serie : null,
+                    turma: isExclusiva && turma ? turma : null,
                 }
             ]);
 
