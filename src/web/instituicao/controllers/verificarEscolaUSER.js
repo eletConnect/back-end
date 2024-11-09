@@ -24,7 +24,7 @@ exports.verificarEscolaUSER = async (request, response) => {
 
         const { data: instituicaoData, error: instituicaoError } = await supabase
             .from('instituicao')
-            .select('cnpj, nome, cep, endereco, telefone, logotipo')
+            .select('*')
             .eq('cnpj', userData.instituicao)
             .single();
 
