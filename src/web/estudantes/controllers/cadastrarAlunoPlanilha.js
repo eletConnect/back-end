@@ -43,7 +43,7 @@ exports.cadastrarAlunoPlanilha = async (request, response) => {
         }
 
         // Criptografar senha padrão
-        const senhaPadrao = '076544321';
+        const senhaPadrao = '07654321';
         const senhaCriptografada = await bcrypt.hash(senhaPadrao, 10);
 
         // Preparar os alunos sem erro para cadastro

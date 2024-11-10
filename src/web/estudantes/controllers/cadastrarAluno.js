@@ -23,7 +23,7 @@ exports.cadastrarAluno = async (request, response) => {
         }
 
         // Gerar a senha padrão e criptografá-la
-        const senha = '076544321';
+        const senha = '07654321';
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
         // Inserir o novo aluno
