@@ -8,7 +8,6 @@ exports.excluirAluno = async (request, response) => {
     }
 
     try {
-        // Verificar se o aluno existe
         const { data: alunoExistente, error: erroVerificacao } = await supabase
             .from('alunos')
             .select('matricula')
@@ -24,7 +23,6 @@ exports.excluirAluno = async (request, response) => {
             return response.status(404).json({ mensagem: 'Aluno não encontrado' });
         }
 
-        // Buscar todas as eletivas associadas ao aluno antes de excluí-lo
         const { data: eletivasAssociadas, error: erroEletivas } = await supabase
             .from('aluno_eletiva')
             .select('codigo_eletiva')
@@ -41,7 +39,6 @@ exports.excluirAluno = async (request, response) => {
             console.log('Eletivas associadas encontradas:', eletivasAssociadas);
         }
 
-        // Desmatricular o aluno de todas as eletivas associadas
         for (const eletiva of eletivasAssociadas) {
             const { error: desmatriculaError } = await supabase
                 .from('aluno_eletiva')
@@ -55,7 +52,6 @@ exports.excluirAluno = async (request, response) => {
                 return response.status(500).json({ mensagem: `Erro ao desmatricular o aluno da eletiva ${eletiva.codigo_eletiva}`, detalhe: desmatriculaError.message });
             }
 
-            // Atualizar o número de alunos cadastrados na eletiva
             const { data: eletivaData, error: erroEletiva } = await supabase
                 .from('eletivas')
                 .select('alunos_cadastrados')
@@ -82,7 +78,6 @@ exports.excluirAluno = async (request, response) => {
             }
         }
 
-        // Excluir o aluno da tabela 'alunos' após desmatriculá-lo das eletivas
         const { data: alunoExcluido, error: alunoError } = await supabase
             .from('alunos')
             .delete()

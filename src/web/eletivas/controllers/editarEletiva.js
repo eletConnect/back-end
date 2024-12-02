@@ -14,21 +14,16 @@ exports.editarEletiva = async (request, response) => {
         total_alunos,
         status,
         exclusiva,
-        exclusividade, // Novo campo para tipo de exclusividade (por série ou por turma)
-        series, // Array de séries (quando exclusividade for por série)
-        serie, // Série (quando exclusividade for por turma)
-        turma // Turma (quando exclusividade for por turma)
+        exclusividade,
+        series,
+        serie,
+        turma 
     } = request.body;
 
-    // Log para depuração
-    console.log(request.body);
-
-    // Verificar se todos os campos obrigatórios estão presentes
     if (!codigo || !instituicao || !nome || !tipo || !professor || !dia || !horario || !sala || !total_alunos || !status) {
         return response.status(400).json({ mensagem: 'Dados incompletos. Verifique todos os campos obrigatórios.' });
     }
 
-    // Verificar se os dados de exclusividade são fornecidos corretamente
     if (exclusiva) {
         if (exclusividade === 'serie' && (!series || series.length === 0)) {
             return response.status(400).json({ mensagem: 'Selecione ao menos uma série para a exclusividade por série.' });

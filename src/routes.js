@@ -13,20 +13,19 @@ const m_authRoute = require('./mobile/auth/auth.route');
 const m_eletivaRoute = require('./mobile/eletivas/eletiva.route');
 const m_avisosRoute = require('./mobile/avisos/avisos.route');
 
-// Criação do objeto de rotas
 const router = express.Router();
 
 // Configuração das rotas web
-router.use('/auth', authRoute); // Rotas de autenticação
-router.use('/instituicao', instituicaoRoute); // Rotas relacionadas a instituições
-router.use('/estudantes', alunoRoute); // Rotas relacionadas a alunos
-router.use('/eletivas', eletivaRoute); // Rotas relacionadas a eletivas
-router.use('/colaboradores', colaboradorRoute); // Rotas relacionadas a colaboradores
-router.use('/home', homeRoute); // Rotas da página inicial
+router.use('/auth', authRoute); 
+router.use('/instituicao', instituicaoRoute); 
+router.use('/estudantes', alunoRoute); 
+router.use('/eletivas', eletivaRoute); 
+router.use('/colaboradores', colaboradorRoute); 
+router.use('/home', homeRoute); 
 
 // Configuração das rotas mobile
-router.use('/m/auth', m_authRoute); // Rotas de autenticação
-router.use('/m/eletivas', m_eletivaRoute); // Rotas relacionadas a eletivas
-router.use('/m/avisos', m_avisosRoute); // Rotas relacionadas a avisos
+router.use('/m/auth', m_authRoute); 
+router.use('/m/eletivas', m_eletivaRoute); 
+router.use('/m/avisos', m_avisosRoute);
 
 module.exports = router;

@@ -17,7 +17,6 @@ exports.cadastrarColaborador = async (request, response) => {
     const { nome, email, matricula, cargo, instituicao, fazerLogin } = request.body;
 
     try {
-        // Verifica se o e-mail já está registrado
         const { data: verificarEmail, error: verificarEmailError } = await supabase
             .from('usuarios')
             .select('email')
@@ -32,7 +31,6 @@ exports.cadastrarColaborador = async (request, response) => {
             return response.status(500).json({ mensagem: 'Erro ao verificar o e-mail fornecido.' });
         }
 
-        // Verifica se a matrícula já está registrada
         const { data: verificarMatricula, error: verificarMatriculaError } = await supabase
             .from('usuarios')
             .select('matricula')
@@ -47,17 +45,14 @@ exports.cadastrarColaborador = async (request, response) => {
             return response.status(500).json({ mensagem: 'Erro ao verificar a matrícula fornecida.' });
         }
 
-        // Gera a senha aleatória e criptografa
         const senhaGerada = gerarSenhaAleatoria();
         const senhaCriptografada = await bcrypt.hash(senhaGerada, 10);
 
-        // Gera o token de ativação
         const token = createToken();
         if (!token) {
             return response.status(500).json({ mensagem: 'Erro ao gerar o token.' });
         }
 
-        // Insere o novo colaborador no banco de dados
         const { error: insertError } = await supabase
             .from('usuarios')
             .insert([{ nome, email, matricula, senha: senhaCriptografada, cargo, instituicao, token, status: 'Aguardando', fazerLogin }]);
@@ -66,7 +61,6 @@ exports.cadastrarColaborador = async (request, response) => {
             return response.status(500).json({ mensagem: 'Erro ao salvar os dados do colaborador.' });
         }
 
-        // Conteúdo do e-mail com as credenciais e o link de ativação
         const emailSubject = 'Colaboradores - Ative sua conta';
         const emailHtml = `
             <p>Olá ${nome},</p>
@@ -81,14 +75,13 @@ exports.cadastrarColaborador = async (request, response) => {
             <p>Após ativar a conta, você poderá fazer login no sistema.</p>
         `;
 
-        // Envia o e-mail de ativação usando o Mailjet
         const request = mailjet
             .post('send', { version: 'v3.1' })
             .request({
                 Messages: [
                     {
                         From: {
-                            Email: 'autentication@eletconnect.dev', // Altere para o e-mail de remetente desejado
+                            Email: 'autentication@eletconnect.dev',
                             Name: 'eletConnect'
                         },
                         To: [

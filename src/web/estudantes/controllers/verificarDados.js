@@ -20,7 +20,6 @@ exports.verificarDados = async (request, response) => {
         const limite = 1000;
         let buscarMais = true;
 
-        // Paginação para buscar matrículas já cadastradas no banco
         while (buscarMais) {
             const { data, error } = await supabase
                 .from('alunos')
@@ -38,24 +37,23 @@ exports.verificarDados = async (request, response) => {
             }
 
             if (data.length === 0 || data.length < limite) {
-                buscarMais = false; // Não há mais registros para buscar
+                buscarMais = false; 
             }
 
-            alunosExistentes = alunosExistentes.concat(data); // Concatenando os dados
-            pagina++; // Incrementando a página para o próximo lote
+            alunosExistentes = alunosExistentes.concat(data);
+            pagina++; 
         }
 
         const matriculasExistentes = alunosExistentes.map((aluno) => aluno.matricula);
         const erros = {};
 
-        // Verificar se as matrículas recebidas já estão cadastradas
+
         dados.forEach((row, index) => {
             const matricula = row['matricula']?.toString().trim();
             if (matriculasExistentes.includes(matricula)) {
                 erros[index] = { matricula: `Matrícula "${matricula}" já está registrada na instituição.` };
             }
 
-            // Verificar se a série é válida ('1º ano', '2º ano', ou '3º ano')
             const serie = row['serie']?.toString().trim();
             if (!['1º ano', '2º ano', '3º ano'].includes(serie)) {
                 erros[index] = {
@@ -66,10 +64,10 @@ exports.verificarDados = async (request, response) => {
         });
 
         if (Object.keys(erros).length > 0) {
-            return response.status(200).json({ erros }); // Retorna os erros encontrados
+            return response.status(200).json({ erros }); 
         }
 
-        return response.status(200).json({ erros: {} }); // Retorna vazio se não houver erros
+        return response.status(200).json({ erros: {} }); 
     } catch (error) {
         return response.status(500).json({ mensagem: `Erro ao verificar dados: ${error.message}` });
     }

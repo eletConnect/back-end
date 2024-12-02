@@ -29,7 +29,7 @@ exports.updateProfile = async (req, res) => {
 
         const { error: updateError } = await supabase
             .from('usuarios')
-            .update({ nome, email, ...(avatar && { foto: avatar }) }) // Corrigido para atualizar a coluna 'foto'
+            .update({ nome, email, ...(avatar && { foto: avatar }) }) 
             .eq('id', id);
 
         if (updateError) {

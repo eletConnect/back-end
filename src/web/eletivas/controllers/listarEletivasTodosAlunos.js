@@ -13,7 +13,6 @@ exports.listarEletivasTodosAlunos = async (req, res) => {
     const limite = 1000;
     let buscarMaisAlunos = true;
 
-    // Buscar todos os alunos da instituição em blocos de 1000
     while (buscarMaisAlunos) {
       const { data: alunosData, error: alunosError } = await supabase
         .from('alunos')
@@ -39,7 +38,7 @@ exports.listarEletivasTodosAlunos = async (req, res) => {
       return res.status(404).json({ mensagem: 'Nenhum aluno encontrado para a instituição informada.' });
     }
 
-    // Buscar todas as eletivas associadas aos alunos
+
     let alunoEletivas = [];
     pagina = 0;
     let buscarMaisEletivas = true;
@@ -62,12 +61,10 @@ exports.listarEletivasTodosAlunos = async (req, res) => {
       pagina++;
     }
 
-    // Verificar se existem eletivas para processar
     if (alunoEletivas.length === 0) {
       return res.status(200).json(alunos.map(aluno => ({ ...aluno, eletivas: [] })));
     }
 
-    // Coletar os códigos de eletivas únicos
     const codigosEletivas = [...new Set(alunoEletivas.map(item => item.codigo_eletiva))];
 
     const { data: eletivas, error: detalhesEletivasError } = await supabase
@@ -79,7 +76,6 @@ exports.listarEletivasTodosAlunos = async (req, res) => {
       return res.status(500).json({ mensagem: 'Erro ao buscar detalhes das eletivas.', detalhe: detalhesEletivasError.message });
     }
 
-    // Organizar as eletivas por aluno
     const eletivasPorAluno = alunoEletivas.reduce((acc, { matricula_aluno, codigo_eletiva }) => {
       const eletiva = eletivas.find(e => e.codigo === codigo_eletiva);
       if (eletiva) {
@@ -89,10 +85,9 @@ exports.listarEletivasTodosAlunos = async (req, res) => {
       return acc;
     }, {});
 
-    // Mesclar as informações de alunos com suas respectivas eletivas
     const alunosComEletivas = alunos.map(aluno => ({
       ...aluno,
-      eletivas: eletivasPorAluno[aluno.matricula] || []  // Se o aluno não tem eletiva, retorna uma lista vazia
+      eletivas: eletivasPorAluno[aluno.matricula] || [] 
     }));
 
     return res.status(200).json(alunosComEletivas);

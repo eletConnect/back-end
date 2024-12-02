@@ -9,7 +9,6 @@ exports.cadastrarAlunoPlanilha = async (request, response) => {
     }
 
     try {
-        // Verificar matrículas já cadastradas
         const matriculasRecebidas = dados.map(aluno => aluno.matricula);
 
         const { data: alunosExistentes, error: erroConsulta } = await supabase
@@ -24,9 +23,8 @@ exports.cadastrarAlunoPlanilha = async (request, response) => {
 
         const matriculasExistentes = alunosExistentes.map(aluno => aluno.matricula);
 
-        // Identificar os alunos que têm matrículas duplicadas e os que têm séries inválidas
         const erros = {};
-        const seriesValidas = ['1º ano', '2º ano', '3º ano']; // Definir séries válidas
+        const seriesValidas = ['1º ano', '2º ano', '3º ano']; 
         dados.forEach((aluno, index) => {
             if (matriculasExistentes.includes(aluno.matricula)) {
                 erros[index] = { matricula: `Matrícula ${aluno.matricula} já cadastrada.` };
@@ -42,11 +40,9 @@ exports.cadastrarAlunoPlanilha = async (request, response) => {
             });
         }
 
-        // Criptografar senha padrão
         const senhaPadrao = '07654321';
         const senhaCriptografada = await bcrypt.hash(senhaPadrao, 10);
 
-        // Preparar os alunos sem erro para cadastro
         const alunosSemErro = dados.map(aluno => ({
             ...aluno,
             senha: senhaCriptografada,
@@ -54,7 +50,6 @@ exports.cadastrarAlunoPlanilha = async (request, response) => {
             instituicao
         }));
 
-        // Inserir alunos no banco de dados
         const { error: erroInsercao } = await supabase
             .from('alunos')
             .insert(alunosSemErro);

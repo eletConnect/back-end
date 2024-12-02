@@ -5,7 +5,6 @@ exports.login = async (request, response) => {
     const { matricula, senha } = request.body;
 
     try {
-        // Busca o aluno pelo número da matrícula
         const { data: aluno, error: alunoError } = await supabase
             .from('alunos')
             .select('*')
@@ -16,13 +15,11 @@ exports.login = async (request, response) => {
             return response.status(400).send({ mensagem: 'Matrícula ou senha inválida' });
         }
 
-        // Verifica a senha
         const senhaValida = await bcrypt.compare(senha, aluno.senha);
         if (!senhaValida) {
             return response.status(400).send({ mensagem: 'Matrícula ou senha inválida' });
         }
 
-        // Busca o nome e a logo da instituição
         const { data: instituicao, error: instituicaoError } = await supabase
             .from('instituicao')
             .select('nome, logotipo')
@@ -33,7 +30,6 @@ exports.login = async (request, response) => {
             return response.status(500).send({ mensagem: 'Erro ao buscar dados da instituição' });
         }
 
-        // Armazena os dados do usuário na sessão
         request.session.user = {
             matricula: aluno.matricula,
             nome: aluno.nome,

@@ -6,8 +6,8 @@ exports.exibirAvisos = async (request, response) => {
         const { data: avisos, error } = await supabase
             .from('avisos')
             .select('*')
-            .eq('instituicao', instituicao) // Filtra avisos pela instituição
-            .order('created_at', { ascending: false }); // Ordena pela data de criação (supondo que 'created_at' seja o campo correto)
+            .eq('instituicao', instituicao) 
+            .order('created_at', { ascending: false }); 
 
         if (error) {
             return response.status(500).json({ mensagem: `Erro ao consultar banco de dados: ${error.message}` });

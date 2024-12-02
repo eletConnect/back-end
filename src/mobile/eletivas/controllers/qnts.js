@@ -4,7 +4,6 @@ exports.qnts = async (req, res) => {
     const { matricula, instituicao } = req.body;
 
     try {
-        // Buscar os códigos das eletivas nas quais o aluno está matriculado
         const { data: qnts, error: fetchError } = await supabase
             .from('alunos')
             .select('qnt_eletiva, qnt_trilha, qnt_projetoVida')

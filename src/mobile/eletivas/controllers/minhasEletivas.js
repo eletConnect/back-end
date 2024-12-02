@@ -4,7 +4,6 @@ exports.minhasEletivas = async (req, res) => {
     const { matricula, instituicao } = req.body;
 
     try {
-        // Consulta para buscar os códigos de eletivas em que o aluno está matriculado
         const { data: eletivas, error: fetchError } = await supabase
             .from('aluno_eletiva')
             .select('codigo_eletiva')
@@ -17,7 +16,6 @@ exports.minhasEletivas = async (req, res) => {
 
         const codigosEletivas = eletivas.map(eletiva => eletiva.codigo_eletiva);
 
-        // Consulta para buscar os detalhes das eletivas com os códigos encontrados
         const { data, error } = await supabase
             .from('eletivas')
             .select('*')
